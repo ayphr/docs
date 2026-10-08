@@ -11,9 +11,23 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/ayphr/docs/edit/main/',
       },
-      sidebar: [
+      customCss: ['./src/styles/custom.css'],
+      components: {
+        ThemeSelect: './src/components/ThemeSelect.astro',
+        ThemeProvider: './src/components/ThemeProvider.astro',
+      },
+      head: [
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
         {
-          autogenerate: { directory: '' },
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap',
+          },
         },
       ],
     }),

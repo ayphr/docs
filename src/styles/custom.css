@@ -1,0 +1,102 @@
+:root {
+	--font-family-base: "DM Sans", sans-serif;
+	--font-family-mono: "DM Mono", monospace;
+
+	--bg-base: #121212;
+	--bg-surface: #1a1a1a;
+	--bg-elevated: #262626;
+	--bg-input: #3b3b3b;
+
+	--border: #404040;
+	--border-focus: #4d4d4d;
+	--border-subtle: #333;
+
+	--text-primary: #fbfefe;
+	--text-muted: #fbfefe80;
+
+	--accent-red: #ff756bbf;
+	--status-error: #ff756b;
+
+	--container-shadow: 0 2px .5rem #0000004d;
+}
+
+/* Map Ayphr tokens onto Starlight’s theme (unlayered, so it wins over Starlight’s layers). */
+:root,
+::backdrop {
+	--sl-font: var(--font-family-base);
+	--sl-font-mono: var(--font-family-mono);
+
+	--sl-color-white: var(--text-primary);
+	--sl-color-black: var(--bg-base);
+	--sl-color-gray-1: var(--text-primary);
+	--sl-color-gray-2: var(--text-primary);
+	--sl-color-gray-3: var(--text-muted);
+	--sl-color-gray-4: var(--border-focus);
+	--sl-color-gray-5: var(--border);
+	--sl-color-gray-6: var(--bg-elevated);
+	--sl-color-gray-7: var(--bg-elevated);
+
+	--sl-color-text: var(--text-primary);
+	--sl-color-text-accent: #b8b8b8;
+	--sl-color-text-invert: var(--bg-base);
+
+	--sl-color-accent: var(--text-primary);
+	--sl-color-accent-low: var(--bg-input);
+	--sl-color-accent-high: var(--text-primary);
+
+	--sl-color-bg: var(--bg-base);
+	--sl-color-bg-nav: var(--bg-surface);
+	--sl-color-bg-sidebar: var(--bg-surface);
+	--sl-color-bg-inline-code: var(--bg-elevated);
+
+	--sl-color-hairline-light: var(--border);
+	--sl-color-hairline: var(--border-subtle);
+	--sl-color-hairline-shade: var(--bg-base);
+
+	--sl-color-backdrop-overlay: #000000bf;
+
+	--sl-shadow-sm: var(--container-shadow);
+
+	--sl-color-orange-low: var(--bg-elevated);
+	--sl-color-orange: var(--border);
+	--sl-color-orange-high: var(--text-primary);
+
+	--sl-color-blue-low: var(--bg-elevated);
+	--sl-color-blue: var(--border);
+	--sl-color-blue-high: var(--text-primary);
+	--sl-color-purple-low: var(--bg-elevated);
+	--sl-color-purple: var(--border);
+	--sl-color-purple-high: var(--text-primary);
+	--sl-color-green-low: var(--bg-elevated);
+	--sl-color-green: var(--border);
+	--sl-color-green-high: var(--text-primary);
+	--sl-color-red-low: var(--bg-elevated);
+	--sl-color-red: var(--accent-red);
+	--sl-color-red-high: var(--status-error);
+}
+
+.social-icons::after {
+	content: none;
+}
+
+.site-title {
+	color: var(--sl-color-text);
+	letter-spacing: -0.02em;
+}
+
+.sidebar-pane a {
+	color: var(--text-muted);
+	font-weight: 400;
+}
+
+.sidebar-pane a:hover,
+.sidebar-pane a:focus {
+	color: var(--text-primary);
+}
+
+.sidebar-pane a[aria-current='page'],
+.sidebar-pane a[aria-current='page']:hover,
+.sidebar-pane a[aria-current='page']:focus {
+	color: var(--text-primary);
+	background-color: transparent;
+}
