@@ -32,7 +32,7 @@ sequenceDiagram
 
     Note over D: Boot / Setup Mode
     D->>C: POST /api/devices/pair (serial, name)
-    C-->>D: 201 Created { code: "737ER4", expiresAt }
+    C-->>D: 201 Created (code: "737ER4", expiresAt)
     
     Note over D,U: Displays 6-character code
     D->>U: Show "737ER4" on LCD / Serial Console
@@ -40,7 +40,7 @@ sequenceDiagram
     loop Every 3-5 seconds
         D->>C: GET /api/devices/pair/737ER4
         alt Not Yet Linked
-            C-->>D: 404 Not Found { error: "not linked yet" }
+            C-->>D: 404 Not Found (not linked yet)
         end
     end
 
@@ -48,13 +48,13 @@ sequenceDiagram
     Note over C: Device paired to User account
 
     D->>C: GET /api/devices/pair/737ER4
-    C-->>D: 200 OK { token: "10deb076...", serial: 12345678 }
+    C-->>D: 200 OK (token: "10deb076...", serial: 12345678)
 
     Note over D: Save token to Flash (NVS)
     
     loop Telemetry Ingestion Loop
-        D->>C: POST /api/devices/data { token, data: [...] }
-        C-->>D: 200 OK { accepted: N }
+        D->>C: POST /api/devices/data (token, data: [...])
+        C-->>D: 200 OK (accepted: N)
     end
 ```
 

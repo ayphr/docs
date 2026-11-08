@@ -99,3 +99,20 @@
 	color: var(--text-primary);
 	background-color: transparent;
 }
+
+.mermaid-diagram-box {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 2rem 0;
+	padding: 1.5rem;
+	background-color: #17181f;
+	border-radius: 0.75rem;
+	border: 1px solid var(--border);
+	overflow-x: auto;
+}
+
+.mermaid-diagram-box svg {
+	max-width: 100%;
+	height: auto;
+}

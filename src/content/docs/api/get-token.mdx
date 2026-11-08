@@ -89,18 +89,18 @@ The device should notify the user (e.g. "Code Expired") and initiate a fresh `PO
 
 ```mermaid
 flowchart TD
-    A[Start Polling Loop] --> B[GET /api/devices/pair/:code]
-    B --> C{HTTP Status?}
-    C -->|200 OK| D[Extract token & serial]
-    D --> E[Save token to Flash/NVS]
-    E --> F[Switch to Telemetry Upload State]
-    C -->|404: not linked yet| G{Code Expired?}
-    G -->|No| H[Sleep 3-5 seconds]
+    A["Start Polling Loop"] --> B["GET /api/devices/pair/:code"]
+    B --> C{"HTTP Status?"}
+    C -->|"200 OK"| D["Extract token & serial"]
+    D --> E["Save token to Flash/NVS"]
+    E --> F["Switch to Telemetry Upload State"]
+    C -->|"404 Not Found"| G{"Error message?"}
+    G -->|"not linked yet"| H["Sleep 3-5 seconds"]
     H --> B
-    G -->|Yes| I[Display Expired & Request New Code]
-    C -->|404: invalid/expired| I
-    C -->|429 Too Many Requests| J[Exponential Backoff]
-    J --> B
+    G -->|"invalid or expired"| I["Display Code Expired"]
+    I --> J["Trigger POST /api/devices/pair"]
+    C -->|"429 Rate Limit"| K["Exponential Backoff"]
+    K --> B
 ```
 
 ---
