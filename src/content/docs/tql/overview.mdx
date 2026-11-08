@@ -1,28 +1,9 @@
 ---
 title: TQL Overview
-description: Learn how to filter and query time-series telemetry data with TQL.
-sidebar:
-  order: 1
+description: Learn how to filter and query time-series telemetry data with TQL
 ---
 
-import { Card, CardGrid, Badge } from '@astrojs/starlight/components';
-
-**TelemetryQL** (or TQL) is a lightweight, human-readable query language designed specifically for time-series telemetry points and sensor data. It provides an intuitive arrow-function syntax coupled with tolerance operators for handling analog sensor drift.
-
-<CardGrid grid={2}>
-  <Card title="Intuitive Syntax" icon="pencil">
-    Combines familiar functional query syntax (`findAll`) with clean operator blocks.
-  </Card>
-  <Card title="Sensor Tolerance" icon="setting">
-    Native support for absolute and percentage tolerance bounds (`~0.5~= 52`).
-  </Card>
-  <Card title="Zero Dependencies" icon="rocket">
-    Compiles directly into native TypeScript predicate and pipeline functions.
-  </Card>
-  <Card title="Time-Series Pipelines" icon="list-format">
-    Chaining pipeline operations like `sortAscending()`, `timeRange()`, and `limit()`.
-  </Card>
-</CardGrid>
+**TelemetryQL** (or TQL) is a lightweight, human-readable query language designed specifically for time-series telemetry points and sensor data. It provides an intuitive arrow-function syntax to easily query and manage data at scale.
 
 ---
 
