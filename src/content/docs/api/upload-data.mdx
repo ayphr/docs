@@ -1,0 +1,159 @@
+---
+title: Upload Telemetry Data
+description: High-throughput batch telemetry ingestion API via POST /api/devices/data using device token authentication.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Once a hardware device has paired and retrieved its secret **Device Token**, it uses this endpoint to upload time-series sensor points.
+
+---
+
+## HTTP Request
+
+```http
+POST /api/devices/data HTTP/1.1
+Host: api.ayphr.com
+Content-Type: application/json
+```
+
+### Authentication
+**Device Token in Body**. The request requires no HTTP `Authorization` headers and no user account cookies. The secret 64-character token is passed directly in the JSON root payload.
+
+### Batch Limits
+- **Maximum Batch Size**: Up to **2,000 telemetry points** per single HTTP POST request.
+- **Deduplication**: If multiple points within a batch share the exact same timestamp (rounded to the nearest second), the server automatically deduplicates them.
+
+---
+
+## Request Body Schema
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `token` | `string` | **Yes** | The 64-character hexadecimal device token received during pairing. |
+| `data` | `array` | **Yes** | Array of telemetry point objects (1 to 2,000 points). |
+
+### Telemetry Point Object Fields
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `timestamp` | `string` \| `number` | **Yes** | ISO-8601 string (e.g. `"2026-10-30T23:41:16.925Z"`) or Unix timestamp in milliseconds. |
+| `temperature` | `number` | **Yes** | Temperature reading (float or integer, e.g. degrees Celsius). |
+| `humidity` | `number` | **Yes** | Relative humidity (float or integer, e.g. percent 0 to 100%). |
+| `airPressure` | `number` | **Yes** | Barometric air pressure (float or integer, e.g. hPa or mbar). |
+
+### Request Body Example
+
+```json
+{
+  "token": "10deb076c8fd609f26499f56e66dca05c9d39e5b544c5f80f8c5c0d23938e914",
+  "data": [
+    {
+      "timestamp": "2026-10-30T23:41:16.000Z",
+      "temperature": 22.5,
+      "humidity": 55.2,
+      "airPressure": 1013.25
+    },
+    {
+      "timestamp": "2026-10-30T23:41:17.000Z",
+      "temperature": 22.6,
+      "humidity": 55.1,
+      "airPressure": 1013.20
+    }
+  ]
+}
+```
+
+---
+
+## Response
+
+### `200 OK`
+Returned when data points are validated and committed to storage.
+
+```json
+{
+  "device": {
+    "serial": 12345678,
+    "name": "Living Room Sensor",
+    "locationId": "loc_abc123",
+    "registeredAt": "2026-10-25T14:22:00.000Z",
+    "lastUploadAt": "2026-10-30T23:41:17.450Z"
+  },
+  "accepted": 2
+}
+```
+
+#### Response Properties:
+- `device` (`object`): Public metadata for the device.
+- `accepted` (`number`): The count of newly persisted telemetry records.
+
+---
+
+## Error Codes
+
+| Status Code | Error Message | Cause / Solution |
+| :--- | :--- | :--- |
+| `401 Unauthorized` | `{"error": "missing device token"}` | The `token` string was not supplied in the JSON payload. |
+| `404 Not Found` | `{"error": "device not linked"}` | The token hash does not match any registered, currently linked device. The device may have been unlinked by the user. |
+| `400 Bad Request` | `{"error": "invalid data"}` | The `data` field is missing, not an array, exceeds 2,000 points, or contains invalid/non-numeric measurements. |
+| `429 Too Many Requests` | `{"error": "Too Many Requests"}` | High-frequency rate limit exceeded. Buffer readings on the hardware device and batch uploads. |
+
+---
+
+## Implementation Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    curl -X POST https://api.ayphr.com/api/devices/data \
+      -H "Content-Type: application/json" \
+      -d '{
+        "token": "10deb076c8fd609f26499f56e66dca05c9d39e5b544c5f80f8c5c0d23938e914",
+        "data": [
+          {
+            "timestamp": "2026-10-30T23:41:16.925Z",
+            "temperature": 22.5,
+            "humidity": 55.0,
+            "airPressure": 1013.0
+          }
+        ]
+      }'
+    ```
+  </TabItem>
+  <TabItem label="Python (Single or Batch Upload)">
+    ```python
+    import datetime
+    import requests
+
+    DEVICE_TOKEN = "10deb076c8fd609f26499f56e66dca05c9d39e5b544c5f80f8c5c0d23938e914"
+
+    payload = {
+        "token": DEVICE_TOKEN,
+        "data": [
+            {
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "temperature": 21.84,
+                "humidity": 48.5,
+                "airPressure": 1014.1
+            }
+        ]
+    }
+
+    resp = requests.post("https://api.ayphr.com/api/devices/data", json=payload)
+    if resp.status_code == 200:
+        print(f"Accepted: {resp.json()['accepted']} records")
+    else:
+        print(f"Upload failed: {resp.status_code} - {resp.text}")
+    ```
+  </TabItem>
+  <TabItem label="Rust (esp-idf firmware)">
+    ```rust
+    use esp_idf_svc::http::client::EspHttpConnection;
+    use esp_idf_svc::http::Method;
+
+    // Buffer measurements locally on ESP32 in ring buffer,
+    // then serialize JSON batch up to 2,000 points and POST to /api/devices/data
+    ```
+  </TabItem>
+</Tabs>

@@ -1,0 +1,125 @@
+---
+title: Request Device Pairing
+description: API specification and code examples for requesting a device pairing code via POST /api/devices/pair.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+When an unlinked hardware device boots up, it initiates the pairing handshake by requesting a temporary, 6-character alphanumeric pairing code from the Ayphr Cloud.
+
+---
+
+## HTTP Request
+
+```http
+POST /api/devices/pair HTTP/1.1
+Host: api.ayphr.com
+Content-Type: application/json
+```
+
+### Authentication
+**None**. This is a public hardware provisioning endpoint.
+
+### Rate Limiting
+- **20 requests per 15 minutes** per IP address.
+
+---
+
+## Request Body
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `serial` | `integer` | **Yes** | Unique hardware serial number (0 to 4,294,967,295, unsigned 32-bit integer). |
+| `name` | `string` | No | Optional human-readable friendly name (maximum 64 characters). Defaults to `"Device <serial>"`. |
+
+### JSON Body Example
+
+```json
+{
+  "serial": 12345678,
+  "name": "Living Room Monitor"
+}
+```
+
+---
+
+## Response
+
+### `201 Created`
+Returned when a pairing session is successfully initiated.
+
+```json
+{
+  "code": "737ER4",
+  "expiresAt": "2026-11-08T01:05:00.000Z"
+}
+```
+
+#### Response Properties:
+- `code` (`string`): A 6-character uppercase alphanumeric code using the unambiguous character set `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (excluding easily confused glyphs such as `0`, `O`, `1`, `I`).
+- `expiresAt` (`string`): ISO-8601 timestamp after which the code expires (15 minutes from creation).
+
+---
+
+## Error Responses
+
+| Status Code | Error Message | Description |
+| :--- | :--- | :--- |
+| `400 Bad Request` | `{"error": "invalid serial"}` | Missing serial or serial outside the valid 32-bit integer range. |
+| `429 Too Many Requests` | `{"error": "Too Many Requests"}` | Exceeded rate limit of 20 requests per 15 minutes. Includes `Retry-After` header. |
+
+---
+
+## Implementation Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    curl -X POST https://api.ayphr.com/api/devices/pair \
+      -H "Content-Type: application/json" \
+      -d '{
+        "serial": 12345678,
+        "name": "Weather Station Alpha"
+      }'
+    ```
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import requests
+
+    response = requests.post(
+        "https://api.ayphr.com/api/devices/pair",
+        json={"serial": 12345678, "name": "Weather Station Alpha"}
+    )
+
+    if response.status_code == 201:
+        data = response.json()
+        print(f"Pairing code: {data['code']}")
+        print(f"Expires at: {data['expiresAt']}")
+    ```
+  </TabItem>
+  <TabItem label="Rust (esp-idf / embedded)">
+    ```rust
+    use esp_idf_svc::http::client::EspHttpConnection;
+    use esp_idf_svc::http::Method;
+
+    let payload = r#"{"serial":12345678,"name":"ESP32-Station"}"#;
+    // Send HTTP POST to /api/devices/pair and parse {"code":"...", "expiresAt":"..."}
+    ```
+  </TabItem>
+  <TabItem label="JavaScript / Fetch">
+    ```javascript
+    const res = await fetch('https://api.ayphr.com/api/devices/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        serial: 12345678,
+        name: 'Desk Sensor'
+      })
+    });
+
+    const { code, expiresAt } = await res.json();
+    console.log(`Display code ${code} to user`);
+    ```
+  </TabItem>
+</Tabs>

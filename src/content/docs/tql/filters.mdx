@@ -1,0 +1,121 @@
+---
+title: Filter Syntax & Conditions
+description: Detailed syntax for condition blocks, standard comparisons, nested paths, and field comparisons in TelemetryQL.
+---
+
+Condition blocks in TelemetryQL are enclosed within `{ ... }` curly braces and evaluate against properties of each telemetry record.
+
+```text
+{ <field> <operator> <value> }
+```
+
+---
+
+## Standard Comparison Operators
+
+TelemetryQL supports six standard binary comparison operators:
+
+| Operator | Definition | Example | Evaluation |
+| :--- | :--- | :--- | :--- |
+| `<` | Strictly less than | `{tempC < 20}` | `point.tempC < 20` |
+| `<=` | Less than or equal to | `{pressure <= 1013.25}` | `point.pressure <= 1013.25` |
+| `>` | Strictly greater than | `{vibration > 0.45}` | `point.vibration > 0.45` |
+| `>=` | Greater than or equal to | `{battery >= 80}` | `point.battery >= 80` |
+| `==` | Loose/strict equality | `{status == "ACTIVE"}` | `point.status === "ACTIVE"` |
+| `!=` | Inequality | `{mode != "STANDBY"}` | `point.mode !== "STANDBY"` |
+
+:::note[Single Equal Sign]
+As a convenience for rapid typing, `{status = "ACTIVE"}` is automatically normalized to equality `{status == "ACTIVE"}`.
+:::
+
+---
+
+## Supported Data Types
+
+Condition blocks safely compare against all standard JSON-compatible data types:
+
+### Numbers
+Both integers and floating-point decimals, including negative numbers:
+
+```text
+findAll( p -> {tempC > -12.5} & {pressure <= 1013} )
+```
+
+### Strings
+Single-quoted or double-quoted strings with standard escape sequence support (`\n`, `\t`, `\"`, `\'`):
+
+```text
+findAll( p -> {status == "ACTIVE"} | {firmware == 'v2.1.0'} )
+```
+
+### Booleans
+Literal `true` and `false`:
+
+```text
+findAll( p -> {isCharging == true} & {hasError == false} )
+```
+
+---
+
+## Nested Object & Dotted Path Traversal
+
+Telemetry streams often bundle hierarchical or grouped payloads (such as device hardware metadata, multi-axis IMU readings, or GPS coordinates).
+
+TQL provides dot-notation paths directly inside `{ ... }`:
+
+```text
+findAll( p -> {device.battery.level < 15} & {imu.accel.z > 9.81} )
+```
+
+Given this JSON record:
+```json
+{
+  "timestamp": 1700000000000,
+  "device": {
+    "model": "ESP32-S3",
+    "battery": {
+      "level": 12.4,
+      "voltage": 3.45
+    }
+  },
+  "imu": {
+    "accel": { "x": 0.01, "y": 0.02, "z": 9.84 }
+  }
+}
+```
+
+TQL safely traverses `device.battery.level` and `imu.accel.z`.
+
+:::tip[Null Safety]
+If an intermediate property in a path does not exist (for instance, if `device` is `null` or `imu.accel` is undefined), TQL gracefully evaluates the condition to `false` without throwing runtime errors.
+:::
+
+---
+
+## Field-to-Field Comparisons
+
+In telemetry processing, you frequently need to compare two variables on the same record rather than comparing against a fixed static literal. 
+
+When the right-hand operand inside `{ ... }` is an unquoted identifier, TQL resolves it as another field reference on the current record:
+
+```text
+findAll( p -> {actualTemp > setpointTemp} )
+```
+
+### Examples
+
+#### Temperature Exceeding Target:
+```text
+findAll( p -> {tempC > targetTemp} )
+```
+
+#### Pressure Imbalance:
+```text
+findAll( p -> {chamberPressure != ambientPressure} )
+```
+
+#### Sensor Discrepancy (comparing redundant sensors):
+```text
+findAll( p -> {sensorA.reading > sensorB.reading} )
+```
+

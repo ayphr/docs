@@ -1,0 +1,181 @@
+---
+title: Aggregations & Analytics
+description: Resample time series, compute moving averages, calculate derivatives and rates of change, and generate statistical summaries in TelemetryQL.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+High-frequency telemetry data streams (such as 10 Hz vibration readings or 1 Hz temperature probes) quickly overwhelm dashboards and storage if not aggregated.
+
+TelemetryQL provides built-in time-series analytical stages designed specifically for temporal sensor metrics.
+
+---
+
+## Time Window Downsampling: `resample`
+
+The `resample` operation aggregates continuous time-series data into discrete temporal buckets (downsampling).
+
+```text
+... then resample( <duration>, <aggregationFunction>, <field> )
+```
+
+- **`duration`**: String representing window size: `"10s"`, `"30s"`, `"1m"`, `"5m"`, `"15m"`, `"1h"`, `"24h"`, `"1d"`.
+- **`aggregationFunction`**: `avg`, `min`, `max`, `sum`, `count`, `first`, or `last`.
+- **`field`**: Target numeric telemetry metric to aggregate.
+
+### Example
+
+Downsample a dataset containing 10,000 raw points into 5-minute averages:
+
+```text
+findAll( p -> {status == "ACTIVE"} )
+  then resample("5m", "avg", tempC)
+```
+
+Output:
+```json
+[
+  { "timestamp": 1700000000000, "tempC": 21.4, "count": 300 },
+  { "timestamp": 1700000300000, "tempC": 22.1, "count": 300 },
+  { "timestamp": 1700000600000, "tempC": 22.8, "count": 298 }
+]
+```
+
+Each bucket timestamp aligns to the start boundary of that time interval.
+
+---
+
+## Rolling Moving Average: `movingAverage`
+
+To eliminate short-term high-frequency sensor noise without downsampling the total number of records, use `movingAverage`.
+
+```text
+... then movingAverage( <field>, <windowSize>, [<targetField>] )
+```
+
+- **`field`**: Source numeric metric.
+- **`windowSize`**: Integer number of consecutive observations to include in the rolling window.
+- **`targetField`** *(optional)*: Name of the property where the smoothed value is written. If omitted, overwrites the source field.
+
+### Example
+
+```text
+findAll( p -> {sensorId == "ACCEL_1"} )
+  then movingAverage(vibration, 5, vibrationSmoothed)
+```
+
+For each record `i`, `vibrationSmoothed` will be the arithmetic mean of records `i - 4` through `i`.
+
+---
+
+## Derivatives & Velocity: `diff` and `rate`
+
+Understanding the **rate of change** is vital for predictive alerts (such as sudden pressure loss, runaway temperature heating, or rapid battery drain).
+
+### `diff(field, [targetField])`
+
+Computes the absolute change between consecutive observations:
+
+```text
+delta_v = value_t - value_{t-1}
+```
+
+```text
+... then diff(tempC, tempDelta)
+```
+
+The initial point receives a diff of `0`.
+
+### `rate(field, [targetField])`
+
+Computes the per-second rate of change by dividing the delta by the elapsed time in seconds between consecutive timestamps:
+
+```text
+rate = (value_t - value_{t-1}) / elapsed_seconds
+```
+
+```text
+... then rate(battery, drainRatePerSec)
+```
+
+---
+
+## Statistical Summary: `summary()`
+
+The `summary()` terminal operation calculates comprehensive descriptive statistics across all numerical columns (or a selected subset of columns).
+
+```text
+... then summary([field1, field2, ...])
+```
+
+Computes:
+- **`count`**: Number of valid non-null numeric observations
+- **`min`**: Lowest observed value
+- **`max`**: Highest observed value
+- **`avg`**: Arithmetic mean
+- **`sum`**: Total sum of all observations
+- **`stddev`**: Standard deviation
+
+### Example
+
+```text
+findAll( p -> {status == "ACTIVE"} )
+  then summary(tempC, pressure)
+```
+
+Output:
+```json
+{
+  "count": 500,
+  "fields": {
+    "tempC": {
+      "count": 500,
+      "min": 18.2,
+      "max": 31.4,
+      "avg": 24.12,
+      "sum": 12060.0,
+      "stddev": 2.87
+    },
+    "pressure": {
+      "count": 500,
+      "min": 998.0,
+      "max": 1024.5,
+      "avg": 1012.3,
+      "sum": 506150.0,
+      "stddev": 4.15
+    }
+  }
+}
+```
+
+---
+
+## Direct Reductions: `avg`, `min`, `max`, `sum`, `median`, `stddev`
+
+When you only need a single scalar statistical figure from a telemetry stream, you can append a direct reduction operator:
+
+```text
+findAll( p -> {tempC > 0} ) then avg(tempC)       // Returns: 22.45
+findAll( p -> {status == "OK"} ) then max(tempC)  // Returns: 35.1
+findAll( p -> {device == 1} ) then count()        // Returns: 120
+findAll( p -> {vibration > 0} ) then median(vibration)
+findAll( p -> {voltage > 0} ) then stddev(voltage)
+```
+
+---
+
+## Grouping: `groupBy`
+
+Groups records into a map indexed by unique values of the specified field:
+
+```text
+findAll( p -> {tempC > 20} ) then groupBy(deviceModel)
+```
+
+Output:
+```json
+{
+  "ESP32-PRO": [ { ... }, { ... } ],
+  "ESP32-LITE": [ { ... } ]
+}
+```

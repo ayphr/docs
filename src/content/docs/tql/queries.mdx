@@ -1,0 +1,136 @@
+---
+title: Query Roots & Selectors
+description: Learn how to use findAll, findFirst, findLast, count, and exists to control query outputs in TelemetryQL.
+---
+
+In TelemetryQL, every query begins with a **Query Root**. The query root defines the retrieval action, the bound variable identifier representing each telemetry record, and the return structure of the query.
+
+```text
+<action>( <variable> -> ( <condition> ) )
+```
+
+---
+
+## Supported Query Roots
+
+TelemetryQL provides five core root actions and one convenience alias:
+
+| Action | Description | Return Type | Typical Use Case |
+| :--- | :--- | :--- | :--- |
+| `findAll(...)` | Returns all records satisfying the filter condition | `T[]` | Dataset extraction, graph plotting, batch exports |
+| `select(...)` | Alias for `findAll` | `T[]` | SQL/LINQ style query writing |
+| `findFirst(...)` | Returns the earliest/first matching record | `T \| null` | Detecting initial fault event or trigger threshold |
+| `findLast(...)` | Returns the most recent/latest matching record | `T \| null` | Inspecting current device state or live status |
+| `count(...)` | Returns total number of matching records | `number` | Computing alert occurrence frequencies, uptime metrics |
+| `exists(...)` | Returns `true` if at least one record matches | `boolean` | Health checks, guard rails, assertion triggers |
+
+---
+
+## Detailed Root Semantics
+
+### `findAll( variable -> condition )`
+
+`findAll` evaluates the filter clause across every item in the dataset. Points evaluating to `true` continue down the pipeline. If no points match, an empty array `[]` is returned.
+
+```text
+findAll( p -> {tempC > 25.0} ) then sortAscending()
+```
+
+Output:
+```json
+[
+  { "timestamp": 1700000060000, "tempC": 26.2, "status": "ACTIVE" },
+  { "timestamp": 1700000120000, "tempC": 28.5, "status": "WARN" }
+]
+```
+
+---
+
+### `findFirst( variable -> condition )`
+
+Returns the first element of the dataset that satisfies the filter (respecting any preceding pipeline sorting, if re-ordered). Returns `null` if no records qualify.
+
+```text
+findFirst( reading -> {battery < 15.0} )
+```
+
+Output:
+```json
+{
+  "timestamp": 1700000180000,
+  "battery": 14.8,
+  "tempC": 21.0
+}
+```
+
+:::tip[Performance Advantage]
+`findFirst` allows immediate termination during streaming evaluations when checking for anomalous conditions.
+:::
+
+---
+
+### `findLast( variable -> condition )`
+
+Returns the final element that passes the filter condition. In a chronologically ordered dataset, `findLast` immediately yields the most recent matching telemetry point.
+
+```text
+findLast( p -> {status == "ACTIVE"} )
+```
+
+Output:
+```json
+{
+  "timestamp": 1700000240000,
+  "tempC": 18.0,
+  "status": "ACTIVE"
+}
+```
+
+---
+
+### `count( variable -> condition )`
+
+`count` evaluates the filter and returns the scalar number of qualifying records as an integer.
+
+```text
+count( pt -> {pressure < 1000} )
+```
+
+Output:
+```json
+42
+```
+
+:::note[Pipeline Interaction]
+If you append pipeline operations such as `limit(10)`, the `count` action counts the surviving records after those pipeline stages have executed.
+:::
+
+---
+
+### `exists( variable -> condition )`
+
+Returns a boolean `true` if one or more points meet the criteria; otherwise `false`.
+
+```text
+exists( pt -> {tempC >= 85.0} )
+```
+
+Output:
+```json
+true
+```
+
+---
+
+## Variable Identifier Semantics
+
+The variable name immediately preceding the arrow (`->`) names the record within the condition scope. While single-letter identifiers (`p`, `r`, `pt`) are common, descriptive identifiers are fully supported:
+
+```text
+findAll( telemetryRecord -> ( {telemetryRecord.vibration > 1.2} ) )
+```
+
+:::note
+Within condition braces `{ ... }`, referencing field names directly (e.g. `{vibration > 1.2}`) implicitly resolves against the current record, making shorthand notation clean and effortless.
+:::
+

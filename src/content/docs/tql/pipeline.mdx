@@ -1,0 +1,190 @@
+---
+title: Pipeline Operations
+description: Learn how to chain sequential transformation, sorting, pagination, projection, and computation operations in TelemetryQL.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+After data passes through the initial filter clause, it flows sequentially through one or more **Pipeline Operations** chained together using the `then` keyword.
+
+```text
+findAll( p -> condition )
+  then operation1()
+  then operation2(arg)
+  then operation3(arg1, arg2)
+```
+
+Each stage receives the transformed array from the preceding step and produces the input for the next.
+
+---
+
+## Sorting & Ordering
+
+### `sortAscending([field])`
+Sorts records in ascending order. If no argument is provided, sorting defaults to the `timestamp` property.
+
+```text
+... then sortAscending()          // Chronological (oldest to newest)
+... then sortAscending(tempC)     // Lowest temperature to highest
+```
+
+### `sortDescending([field])`
+Sorts records in descending order (defaults to `timestamp`).
+
+```text
+... then sortDescending()         // Reverse chronological (newest to oldest)
+... then sortDescending(pressure) // Highest pressure to lowest
+```
+
+---
+
+## Pagination & Slicing
+
+### `limit(count)`
+Restricts the final output to a maximum number of records.
+
+```text
+... then limit(25)
+```
+
+### `offset(count)` / `skip(count)`
+Skips the initial `count` records. Essential for pagination.
+
+```text
+// Page 2: Skip first 50 records and retrieve next 25
+... then offset(50) then limit(25)
+```
+
+### `slice(start, [end])`
+Extracts a sub-range of items by index (0-based).
+
+```text
+... then slice(10, 20)
+```
+
+### `head(count)` and `tail(count)`
+Direct shortcuts for retrieving the first or last N records.
+
+```text
+... then head(5)  // First 5 records
+... then tail(5)  // Last 5 records
+```
+
+---
+
+## Time Range Bounding
+
+### `timeRange(start, end)`
+Filters records to a strictly bounded temporal window. Accepts Unix millisecond timestamps or ISO-8601 formatted date strings.
+
+```text
+... then timeRange("2026-11-01T00:00:00Z", "2026-11-08T00:00:00Z")
+... then timeRange(1700000000000, 1700086400000)
+```
+
+---
+
+## Field Projection & Renaming
+
+### `select(field1, field2, ...)` / `project(...)`
+Prunes all fields except for the `timestamp` and the explicitly specified properties.
+
+```text
+... then select(tempC, relHumidity, battery)
+```
+
+### `omit(field1, field2, ...)`
+Removes the specified properties from each record.
+
+```text
+... then omit(rawAdcCount, debugRegisters)
+```
+
+### `rename(oldField, newField)`
+Renames a property on every record in the dataset.
+
+```text
+... then rename(tempC, celsius)
+```
+
+---
+
+## Data Cleaning & Imputation
+
+Real-world telemetry streams often experience packet dropouts, sensor drop-offs, and out-of-range sensor spikes.
+
+### `distinct([field])` / `dedup([field])`
+Deduplicates records. If a field name is passed, keeps only the first record encountered for each unique value of that field. If omitted, deduplicates whole records.
+
+```text
+... then distinct(serial)
+```
+
+### `dropNulls(field1, field2, ...)`
+Drops any point where one or more of the specified fields are `null` or `undefined`.
+
+```text
+... then dropNulls(temperature, humidity)
+```
+
+### `fill(field, fallbackValue)`
+Replaces `null` or `undefined` values of a specific field with a constant fallback value.
+
+```text
+... then fill(humidity, 0.0)
+```
+
+### `fillPrevious(field)`
+**Last Observation Carried Forward (LOCF)**. Replaces missing values with the most recent previously observed valid value in the stream.
+
+```text
+... then fillPrevious(temperature)
+```
+
+### `clamp(field, min, max)`
+Restricts numeric values to fall between `[min, max]`. Values below `min` are set to `min`; values above `max` are set to `max`.
+
+```text
+// Clamp battery percentage between 0% and 100%
+... then clamp(battery, 0, 100)
+```
+
+---
+
+## Safe Mathematical Computation: `compute`
+
+The `compute` operation derives a new property (or updates an existing one) by evaluating an arithmetic expression for every point in the dataset.
+
+```text
+... then compute( <targetField>, <arithmeticExpression> )
+```
+
+Supported syntax in expressions:
+- Operators: `+`, `-`, `*`, `/`, `%`
+- Parentheses: `( ... )`
+- Numeric constants: `1.8`, `32`, `-5`
+- Existing telemetry property identifiers: `tempC`, `voltage`, `current`
+
+### Examples
+
+<Tabs>
+  <TabItem label="Celsius to Fahrenheit">
+    ```text
+    ... then compute(tempF, (tempC * 1.8) + 32)
+    ```
+  </TabItem>
+  <TabItem label="Electrical Power (Watts)">
+    ```text
+    ... then compute(powerWatts, voltage * current)
+    ```
+  </TabItem>
+  <TabItem label="Pressure Deviation">
+    ```text
+    ... then compute(pressureDelta, pressure - 1013.25)
+    ```
+  </TabItem>
+</Tabs>
+
+:::tip[Pure & Sandboxed]
+`compute` does not call `eval()` or construct dynamic `Function` objects. It runs via a deterministic recursive-descent math parser, guaranteeing complete security inside untrusted sandboxes and browser tabs.
+:::

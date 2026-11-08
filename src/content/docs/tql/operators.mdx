@@ -1,0 +1,149 @@
+---
+title: Logical & Advanced Operators
+description: Complete guide to logical NOT, AND, OR, set membership, ranges, presence checks, and regex matching in TelemetryQL.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+TelemetryQL includes a comprehensive suite of logical and conditional operators to handle complex decision matrices and event alerting rules.
+
+---
+
+## Logical Combinators
+
+Multiple conditions can be assembled using logical AND (`&`), OR (`|`), and negation (`!`):
+
+| Operator | Syntax | Precedence | Meaning |
+| :--- | :--- | :--- | :--- |
+| `!` / `not` | `!{condition}` or `!(...)` | Highest | Inverts truth value |
+| `&` | `{c1} & {c2}` | Medium | True only if both conditions are true |
+| `\|` | `{c1} \| {c2}` | Lowest | True if either condition is true |
+
+### Operator Precedence & Grouping
+
+Parentheses `( ... )` explicitly enforce evaluation order:
+
+```text
+findAll( p -> ( {tempC > 40} | {humidity > 80} ) & !{status == "STANDBY"} )
+```
+
+Without parentheses, `&` binds tighter than `|`:
+
+```text
+{a} | {b} & {c}   // Evaluates as: {a} | ( {b} & {c} )
+```
+
+### Negation Examples
+
+<Tabs>
+  <TabItem label="Negating Single Condition">
+    ```text
+    // Match points whose status is NOT FAULT
+    findAll( p -> !{status == "FAULT"} )
+    ```
+  </TabItem>
+  <TabItem label="Negating Compound Expression">
+    ```text
+    // Match points where BOTH conditions do not hold simultaneously
+    findAll( p -> !( {tempC < 10} & {heater == false} ) )
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Set Membership: `in` and `not in`
+
+Check whether a field matches any value in a discrete set of literals:
+
+```text
+{ <field> in [ <val1>, <val2>, ... ] }
+{ <field> not in [ <val1>, <val2>, ... ] }
+```
+
+### Examples
+
+```text
+// Match any point in high alert states
+findAll( p -> {status in ["WARN_HIGH_TEMP", "CRITICAL_PRESSURE", "EMERGENCY"]} )
+
+// Exclude standard operational codes
+findAll( p -> {errorCode not in [0, 200, 204]} )
+```
+
+Elements in the set can be numbers, strings, or booleans.
+
+---
+
+## Range Operator: `between ... and ...`
+
+The `between` operator checks if a numerical or chronological field falls within an inclusive closed interval $[min, max]$.
+
+```text
+{ <field> between <min> and <max> }
+```
+
+### Examples
+
+```text
+// Match comfort zone temperatures between 20.0 °C and 24.5 °C (inclusive)
+findAll( p -> {tempC between 20.0 and 24.5} )
+
+// Filter by ISO timestamp string boundaries
+findAll( p -> {recordedAt between "2026-11-01" and "2026-11-08"} )
+```
+
+---
+
+## Nullability & Presence Checks
+
+Sensors may fail to transmit specific payload metrics when sensors disconnect, wires fray, or packets drop. TQL provides dedicated presence operators to filter on data availability:
+
+### Checking for Null / Non-Null
+
+- `{field is null}`: Evaluates to `true` if the field is `null` or `undefined`.
+- `{field is not null}`: Evaluates to `true` if the field holds a concrete value.
+
+```text
+// Find points where the external barometer failed to report a value
+findAll( p -> {barometer.pressure is null} )
+
+// Only process records that have valid battery readings
+findAll( p -> {battery.voltage is not null} )
+```
+
+### Checking for Property Presence / Absence
+
+- `{field exists}` or `{field is present}`: True if property exists on the record.
+- `{field missing}` or `{field is missing}`: True if property does not exist.
+
+```text
+// Detect points containing optional GPS coordinates
+findAll( p -> {location.latitude exists} )
+```
+
+---
+
+## String Pattern Matching
+
+TelemetryQL provides built-in operators for string inspection, prefixes, suffixes, and regular expressions:
+
+| Operator | Example | Evaluates To |
+| :--- | :--- | :--- |
+| `contains` | `{msg contains "error"}` | `String(msg).includes("error")` |
+| `not contains` | `{msg not contains "debug"}` | `!String(msg).includes("debug")` |
+| `startsWith` | `{device startsWith "ESP32"}` | `String(device).startsWith("ESP32")` |
+| `endsWith` | `{file endsWith ".csv"}` | `String(file).endsWith(".csv")` |
+| `=~` (regex match) | `{serial =~ "^AYP-[0-9]{6}$"}` | `RegExp.test(serial)` |
+| `!~` (regex non-match) | `{logLine !~ "HEALTHY\|HEARTBEAT"}` | `!RegExp.test(logLine)` |
+
+### Examples
+
+```text
+// Isolate firmware versions from the beta branch
+findAll( p -> {firmware startsWith "v3.0.0-beta"} )
+
+// Detect error log lines matching regex
+findAll( p -> {log.message =~ "(?i)fail(ure\|ed)?"} )
+```
+

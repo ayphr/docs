@@ -1,20 +1,49 @@
 ---
 title: Ayphr Documentation
-description: Official documentation and developer guides for the Ayphr platform and tools.
+description: Official developer documentation and API reference for the Ayphr telemetry platform, TelemetryQL query language, and device lifecycle integration.
 ---
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Welcome to the Ayphr documentation portal. Here you'll find comprehensive guides, reference materials, and API specifications for integrating Ayphr tools into your data architecture.
+Welcome to the Ayphr developer documentation portal. Ayphr provides a modern time-series telemetry platform designed for embedded sensors, environmental monitoring stations, edge devices, and real-time analytical workflows.
 
 ---
 
-## Ecosystem
+## Core Ecosystem
 
 <CardGrid grid={2}>
-  <Card title="TelemetryQL" icon="rocket">
-    A lightweight, expressive query language designed for filtering, transforming, and analyzing time-series telemetry data.
+  <Card title="TelemetryQL (TQL)" icon="rocket">
+    A purpose-built, high-performance query language designed for filtering, transforming, downsampling, and analyzing time-series telemetry streams with sensor tolerance primitives.
     
-    <LinkCard title="Getting Started" href="/tql/" />
+    <LinkCard title="TQL Overview & Guides" href="/tql/overview/" />
+    <LinkCard title="Syntax Quick Reference" href="/tql/syntax/" />
+  </Card>
+
+  <Card title="Public Device API" icon="laptop">
+    Lightweight, hardware-friendly REST APIs for IoT and embedded hardware. Provision devices with ephemeral 6-character pairing codes, retrieve permanent device tokens, and ingest batch telemetry without user session tokens.
+    
+    <LinkCard title="Device Architecture & Flow" href="/api/overview/" />
+    <LinkCard title="Telemetry Upload Endpoint" href="/api/upload-data/" />
+  </Card>
+</CardGrid>
+
+---
+
+## Explore by Topic
+
+<CardGrid grid={3}>
+  <Card title="Sensor Tolerance" icon="puzzle">
+    Learn how TQL handles real-world analog sensor jitter, ADC quantization noise, and dynamic setpoints using `~delta~=` and `~delta%~=`.
+    <LinkCard title="Tolerance Guide" href="/tql/tolerance/" />
+  </Card>
+
+  <Card title="Analytics & Resampling" icon="setting">
+    Downsample time-series with `resample()`, calculate derivatives with `rate()` / `diff()`, compute rolling averages, and generate statistical summaries.
+    <LinkCard title="Aggregations & Analytics" href="/tql/aggregations/" />
+  </Card>
+
+  <Card title="Hardware Pairing" icon="open-book">
+    Step-by-step device linking flow: generate pairing codes, poll for ownership linkage, and securely persist device tokens to flash memory.
+    <LinkCard title="Pairing Lifecycle" href="/api/pair-device/" />
   </Card>
 </CardGrid>
