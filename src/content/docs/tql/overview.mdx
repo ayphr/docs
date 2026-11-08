@@ -18,7 +18,7 @@ TQL solves this with a clean, arrow-function syntax, built-in sensor tolerance p
 - **Intuitive Arrow Syntax**: Write queries that read like modern functional code: `findAll( p -> condition ) then operation()`.
 - **First-Class Sensor Tolerance**: Built-in absolute (`~delta~=`) and percentage (`~delta%~=`) tolerance operators to seamlessly accommodate sensor fluctuation.
 - **Nested Field Traversal**: Query complex nested telemetry objects using standard dot notation (`sensor.environment.tempC`).
-- **Flexible Query Roots**: Select all records (`findAll`), query boundaries (`findFirst`, `findLast`), compute counts (`count`), or perform existence checks (`exists`).
+- **Flexible Query Roots**: Select all records (`findAll`), query boundaries (`findFirst`, `findLast`), compute counts (`count`), or perform existence checks (`exists`). Every root also accepts no arguments (`findAll()`, `count()`, and so on) to operate on the entire dataset without a filter.
 - **Composable Pipelines**: Chain multi-stage data processing with `then`: sorting, pagination, field projection, data imputation (`fill`, `fillPrevious`), mathematical derivations (`compute`), and bounding (`clamp`).
 - **Time-Series Analytics**: Native window downsampling (`resample`), derivative rates of change (`rate`, `diff`), rolling moving averages (`movingAverage`), and statistical summaries (`summary()`).
 - **Sandboxed & Secure**: Compiles into pure, deterministic closures without using `eval()` or `Function()`. Safe for browser frontends, Edge workers, and server backends.
@@ -30,8 +30,11 @@ TQL solves this with a clean, arrow-function syntax, built-in sensor tolerance p
 Every TQL query consists of two primary sections: a **Query Root & Filter Clause**, followed by optional **Pipeline Operations** chained with `then`.
 
 ```text
-<action>( <variable> -> ( <condition> ) ) [ then <operation> ]*
+<action>( <variable> -> ( <condition> ) ) [ then <operation> ]*   // filtered
+<action>()                                  [ then <operation> ]*   // unfiltered
 ```
+
+The **Query Root & Filter Clause** can also omit its arguments entirely. For example, `findAll()` skips filtering and returns every record, while `count()` returns the total record count.
 
 ### Complete Example
 

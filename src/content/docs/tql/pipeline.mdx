@@ -14,6 +14,14 @@ findAll( p -> condition )
   then operation3(arg1, arg2)
 ```
 
+The query root can also be unfiltered, in which case every record enters the pipeline:
+
+```text
+findAll()
+  then sortDescending(timestamp)
+  then limit(10)
+```
+
 Each stage receives the transformed array from the preceding step and produces the input for the next.
 
 ---

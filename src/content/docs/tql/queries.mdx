@@ -3,10 +3,11 @@ title: Query Roots & Selectors
 description: Learn how to use findAll, findFirst, findLast, count, and exists to control query outputs in TelemetryQL.
 ---
 
-In TelemetryQL, every query begins with a **Query Root**. The query root defines the retrieval action, the bound variable identifier representing each telemetry record, and the return structure of the query.
+In TelemetryQL, every query begins with a **Query Root**. The query root defines the retrieval action, the bound variable identifier representing each telemetry record, and the return structure of the query. The filter clause is optional: calling a root with no arguments (for example, `findAll()`) skips filtering and operates on every record.
 
 ```text
-<action>( <variable> -> ( <condition> ) )
+<action>( <variable> -> ( <condition> ) )   // filtered
+<action>()                                  // unfiltered
 ```
 
 ---
@@ -17,20 +18,45 @@ TelemetryQL provides five core root actions and one convenience alias:
 
 | Action | Description | Return Type | Typical Use Case |
 | :--- | :--- | :--- | :--- |
-| `findAll(...)` | Returns all records satisfying the filter condition | `T[]` | Dataset extraction, graph plotting, batch exports |
-| `select(...)` | Alias for `findAll` | `T[]` | SQL/LINQ style query writing |
-| `findFirst(...)` | Returns the earliest/first matching record | `T \| null` | Detecting initial fault event or trigger threshold |
-| `findLast(...)` | Returns the most recent/latest matching record | `T \| null` | Inspecting current device state or live status |
-| `count(...)` | Returns total number of matching records | `number` | Computing alert occurrence frequencies, uptime metrics |
-| `exists(...)` | Returns `true` if at least one record matches | `boolean` | Health checks, guard rails, assertion triggers |
+| `findAll(...)` / `findAll()` | Returns all matching records, or every record when called with no arguments | `T[]` | Dataset extraction, graph plotting, batch exports |
+| `select(...)` / `select()` | Alias for `findAll` | `T[]` | SQL/LINQ style query writing |
+| `findFirst(...)` / `findFirst()` | Returns the first matching record, or the first record when unfiltered | `T \| null` | Detecting initial fault event or trigger threshold |
+| `findLast(...)` / `findLast()` | Returns the last matching record, or the last record when unfiltered | `T \| null` | Inspecting current device state or live status |
+| `count(...)` / `count()` | Returns the number of matching records, or the total record count when unfiltered | `number` | Computing alert occurrence frequencies, uptime metrics |
+| `exists(...)` / `exists()` | Returns `true` if at least one record matches, or if any records exist when unfiltered | `boolean` | Health checks, guard rails, assertion triggers |
+
+---
+
+## Unfiltered Roots
+
+Passing no arguments to a query root skips the filter clause. This is useful when you want to work with the entire dataset and shape it entirely through pipeline operations:
+
+```text
+findAll() then sortDescending(timestamp) then limit(10)
+```
+
+The no-argument form behaves as follows:
+
+| Query | Result |
+| :--- | :--- |
+| `findAll()` | Every record |
+| `select()` | Every record (alias of `findAll`) |
+| `findFirst()` | The first record, or `null` if the dataset is empty |
+| `findLast()` | The last record, or `null` if the dataset is empty |
+| `count()` | The total number of records |
+| `exists()` | `true` when the dataset contains at least one record |
+
+Pipeline operations can follow an unfiltered root exactly as they can a filtered one.
 
 ---
 
 ## Detailed Root Semantics
 
-### `findAll( variable -> condition )`
+### `findAll( variable -> condition )` / `findAll()`
 
 `findAll` evaluates the filter clause across every item in the dataset. Points evaluating to `true` continue down the pipeline. If no points match, an empty array `[]` is returned.
+
+Calling `findAll()` with no arguments skips the filter and returns every record.
 
 ```text
 findAll( p -> {tempC > 25.0} ) then sortAscending()
@@ -46,9 +72,11 @@ Output:
 
 ---
 
-### `findFirst( variable -> condition )`
+### `findFirst( variable -> condition )` / `findFirst()`
 
 Returns the first element of the dataset that satisfies the filter (respecting any preceding pipeline sorting, if re-ordered). Returns `null` if no records qualify.
+
+Calling `findFirst()` with no arguments returns the first record, or `null` if the dataset is empty.
 
 ```text
 findFirst( reading -> {battery < 15.0} )
@@ -69,9 +97,11 @@ Output:
 
 ---
 
-### `findLast( variable -> condition )`
+### `findLast( variable -> condition )` / `findLast()`
 
 Returns the final element that passes the filter condition. In a chronologically ordered dataset, `findLast` immediately yields the most recent matching telemetry point.
+
+Calling `findLast()` with no arguments returns the last record, or `null` if the dataset is empty.
 
 ```text
 findLast( p -> {status == "ACTIVE"} )
@@ -88,9 +118,11 @@ Output:
 
 ---
 
-### `count( variable -> condition )`
+### `count( variable -> condition )` / `count()`
 
 `count` evaluates the filter and returns the scalar number of qualifying records as an integer.
+
+Calling `count()` with no arguments returns the total number of records in the dataset.
 
 ```text
 count( pt -> {pressure < 1000} )
@@ -107,9 +139,11 @@ If you append pipeline operations such as `limit(10)`, the `count` action counts
 
 ---
 
-### `exists( variable -> condition )`
+### `exists( variable -> condition )` / `exists()`
 
 Returns a boolean `true` if one or more points meet the criteria; otherwise `false`.
+
+Calling `exists()` with no arguments returns `true` when the dataset contains at least one record.
 
 ```text
 exists( pt -> {tempC >= 85.0} )

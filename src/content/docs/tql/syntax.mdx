@@ -12,8 +12,11 @@ This page provides an exhaustive quick-reference cheat sheet for all clauses, co
 ## Grammar Overview
 
 ```text
-<action>( <var> -> <expression> ) [ then <pipelineOp> ]*
+<action>( <var> -> <expression> ) [ then <pipelineOp> ]*   // filtered
+<action>()                                  [ then <pipelineOp> ]*   // unfiltered
 ```
+
+The filter clause is optional. Omitting the arguments (for example, `findAll()`) skips filtering and operates on every record.
 
 ---
 
@@ -21,12 +24,12 @@ This page provides an exhaustive quick-reference cheat sheet for all clauses, co
 
 | Root | Description | Return Shape |
 | :--- | :--- | :--- |
-| `findAll(p -> ...)` | Evaluates filter and returns all matching records | `T[]` |
-| `select(p -> ...)` | Functional alias for `findAll` | `T[]` |
-| `findFirst(p -> ...)` | Returns first matching record | `T \| null` |
-| `findLast(p -> ...)` | Returns last matching record | `T \| null` |
-| `count(p -> ...)` | Returns number of matching records | `number` |
-| `exists(p -> ...)` | Checks if one or more records match | `boolean` |
+| `findAll(p -> ...)` / `findAll()` | Evaluates filter and returns all matching records; `findAll()` returns every record | `T[]` |
+| `select(p -> ...)` / `select()` | Functional alias for `findAll` | `T[]` |
+| `findFirst(p -> ...)` / `findFirst()` | Returns first matching record; `findFirst()` returns the first record | `T \| null` |
+| `findLast(p -> ...)` / `findLast()` | Returns last matching record; `findLast()` returns the last record | `T \| null` |
+| `count(p -> ...)` / `count()` | Returns number of matching records; `count()` returns the total record count | `number` |
+| `exists(p -> ...)` / `exists()` | Checks if one or more records match; `exists()` checks whether any records exist | `boolean` |
 
 ---
 
