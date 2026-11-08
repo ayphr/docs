@@ -20,7 +20,6 @@
 	--container-shadow: 0 2px .5rem #0000004d;
 }
 
-/* Map Ayphr tokens onto Starlight’s theme (unlayered, so it wins over Starlight’s layers). */
 :root,
 ::backdrop {
 	--sl-font: var(--font-family-base);

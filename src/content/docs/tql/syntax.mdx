@@ -1,0 +1,114 @@
+---
+title: Syntax Reference
+description: Detailed syntax, standard comparisons, tolerance operators, and pipeline stages in TQL.
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+TelemetryQL statements consist of two main components: a **Filter Clause** wrapped inside `findAll(...)` and optional **Pipeline Operations** chained with `then`.
+
+```text
+findAll( <variable> -> ( <condition> ) ) [ then <operation> ]*
+```
+
+---
+
+## Comparison Operators
+
+Comparison blocks are enclosed in `{ ... }` brackets and reference fields on the target object.
+
+### Standard Comparisons
+
+| Operator | Meaning                  | Example                | Evaluates To             |
+| :------- | :----------------------- | :--------------------- | :----------------------- |
+| `<`      | Less than                | `{tempC < 22.34}`      | `pt.tempC < 22.34`       |
+| `<=`     | Less than or equal to    | `{pressure <= 101.3}`  | `pt.pressure <= 101.3`   |
+| `>`      | Greater than             | `{vibration > 0.8}`    | `pt.vibration > 0.8`     |
+| `>=`     | Greater than or equal to | `{battery >= 20}`      | `pt.battery >= 20`       |
+| `==`     | Equality                 | `{status == "ACTIVE"}` | `pt.status === "ACTIVE"` |
+| `!=`     | Inequality               | `{mode != "FAULT"}`    | `pt.mode !== "FAULT"`    |
+
+### Tolerance Operators
+
+Sensors frequently fluctuate around a target value. TelemetryQL provides built-in delta and percentage tolerance primitives.
+
+#### Absolute Delta (`~<delta>~=`)
+
+Evaluates to `true` if the field value falls within `[center - delta, center + delta]`.
+
+```text
+{relHumidity ~0.5~= 52}
+```
+
+**Range:** `51.5` to `52.5`
+
+#### Percentage Tolerance (`~<delta>%~=`)
+
+Evaluates to `true` if the field value falls within a percentage deviation from the target center value.
+
+```text
+{voltage ~5%~= 220}
+```
+
+**Range:** `209.0` to `231.0` (±5% of 220)
+
+:::caution[Non-Numeric Values]
+Tolerance operators automatically return `false` if the target field on the point is not a `number`.
+:::
+
+---
+
+## Logical Grouping
+
+Conditions can be combined using logical `&` (AND) and `|` (OR) operators, with parentheses controlling precedence.
+
+<Tabs>
+  <TabItem label="AND Condition">
+    ```text
+    findAll( p -> ( {tempC < 25} & {battery > 50} ) )
+    ```
+  </TabItem>
+  <TabItem label="OR Condition">
+    ```text
+    findAll( p -> ( {status == "CRITICAL"} | {tempC > 80} ) )
+    ```
+  </TabItem>
+  <TabItem label="Nested Logic">
+    ```text
+    findAll( p -> ( {status == "ACTIVE"} & ( {voltage ~2%~= 120} | {vibration < 0.1} ) ) )
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Pipeline Operations
+
+Pipeline operations execute sequentially after data passes the filter clause.
+
+### `sortAscending([field])` / `sortDescending([field])`
+
+Sorts the matching points. If no field parameter is passed, sorting defaults to the `timestamp` property.
+
+```text
+... then sortAscending()            // Sort by point.timestamp ascending
+... then sortDescending(vibration) // Sort by point.vibration descending
+```
+
+### `timeRange(start, end)`
+
+Filters output within explicit time bounds. Accepts Unix timestamps (milliseconds) or ISO-8601 strings.
+
+```text
+... then timeRange("2026-11-01T00:00:00Z", "2026-11-08T00:00:00Z")
+```
+
+### `limit(count)`
+
+Restricts the final output to a maximum number of records.
+
+```text
+... then limit(50)
+```
