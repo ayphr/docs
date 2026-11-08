@@ -6,7 +6,7 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'Ayphr',
+      title: 'Ayphr Docs',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/ayphr' }],
       editLink: {
         baseUrl: 'https://github.com/ayphr/docs/edit/main/',
@@ -16,6 +16,17 @@ export default defineConfig({
         ThemeSelect: './src/components/ThemeSelect.astro',
         ThemeProvider: './src/components/ThemeProvider.astro',
       },
+      sidebar: [
+        { label: 'Docs Overview', slug: 'index' },
+        {
+          label: 'TelemetryQL',
+          badge: { text: 'Beta', variant: 'caution' },
+          items: [
+            { label: 'Overview', slug: 'tql/overview' },
+            { label: 'Syntax', slug: 'tql/syntax' },
+          ],
+        },
+      ],
       head: [
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
         {
