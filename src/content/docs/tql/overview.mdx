@@ -16,6 +16,8 @@ findAll( point -> ( {tempC < 22.34} & {relHumidity ~0.5~= 52} ) ) then sortAscen
 ```
 
 :::note[Execution Flow]
-Filter Phase: Evaluates `{tempC < 22.34}` and `{relHumidity ~0.5~= 52}` against every telemetry point in the query set
-Pipeline Phase: Receives the matching set and orders them chronologically by timestamp
+
+1. Filter Phase: Evaluates `{tempC < 22.34}` and `{relHumidity ~0.5~= 52}` against every telemetry point in the query set
+2. Pipeline Phase: Receives the matching set and orders them chronologically by timestamp
+
 :::
