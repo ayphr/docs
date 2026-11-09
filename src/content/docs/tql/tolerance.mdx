@@ -7,7 +7,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 Physical hardware sensors rarely emit completely steady values. Temperature probes experience subtle thermoelectric variations, humidity sensors drift with ambient convection, and Analog-to-Digital Converters (ADCs) introduce quantization noise.
 
-Attempting to match sensor values with exact equality (`{temperature == 22.0}`) will cause queries to miss valid readings that fluctuate by hundredths or tenths of a degree (e.g. `22.004 °C`).
+Attempting to match sensor values with exact equality (`{p.temperature == 22.0}`) will cause queries to miss valid readings that fluctuate by hundredths or tenths of a degree (e.g. `22.004 °C`).
 
 TelemetryQL solves this fundamental IoT challenge with **first-class tolerance operators**.
 
@@ -18,7 +18,7 @@ TelemetryQL solves this fundamental IoT challenge with **first-class tolerance o
 The absolute delta operator evaluates to `true` if the field value falls within a fixed interval centered on the target value.
 
 ```text
-{ <field> ~<delta>~= <center> }
+{ <variable>.<field> ~<delta>~= <center> }
 ```
 
 ### Formula
@@ -33,14 +33,14 @@ center - delta <= field <= center + delta
 Consider matching relative humidity within $\pm 0.5\%$ of a target $52\%$:
 
 ```text
-findAll( p -> {relHumidity ~0.5~= 52} )
+findAll( p -> {p.relHumidity ~0.5~= 52} )
 ```
 
 - **Delta:** `0.5`
 - **Target Center:** `52`
 - **Matching Interval:** `51.5` to `52.5`
 
-Any telemetry point with `relHumidity` between `51.5` and `52.5` (inclusive) evaluates to `true`.
+Any telemetry point with `p.relHumidity` between `51.5` and `52.5` (inclusive) evaluates to `true`.
 
 ---
 
@@ -51,7 +51,7 @@ When operating across wide dynamic ranges (such as mains electrical voltage, eng
 TelemetryQL provides the percentage tolerance operator (`~<delta>%~=`):
 
 ```text
-{ <field> ~<delta>%~= <center> }
+{ <variable>.<field> ~<delta>%~= <center> }
 ```
 
 ### Formula
@@ -66,7 +66,7 @@ Matching Range = [center - absoluteDelta, center + absoluteDelta]
 Consider validating that a mains AC voltage sensor stays within ±5% of 220 V:
 
 ```text
-findAll( p -> {voltage ~5%~= 220} )
+findAll( p -> {p.voltage ~5%~= 220} )
 ```
 
 - **Target Center:** `220`
@@ -85,13 +85,13 @@ TQL allows the center operand to reference another field on the same point:
   <TabItem label="Absolute Dynamic Tolerance">
     ```text
     // Matches points where currentTemp is within 1.5 °C of targetTemp
-    findAll( p -> {currentTemp ~1.5~= targetTemp} )
+    findAll( p -> {p.currentTemp ~1.5~= p.targetTemp} )
     ```
   </TabItem>
   <TabItem label="Percentage Dynamic Tolerance">
     ```text
     // Matches points where measuredRPM is within 3% of demandedRPM
-    findAll( p -> {measuredRPM ~3%~= demandedRPM} )
+    findAll( p -> {p.measuredRPM ~3%~= p.demandedRPM} )
     ```
   </TabItem>
 </Tabs>

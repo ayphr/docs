@@ -15,7 +15,7 @@ This cookbook provides ready-to-use TelemetryQL query patterns for common real-w
 Find any point where the ambient temperature exceeds the thermostat target setpoint by more than 1.5 °C while the compressor state is active:
 
 ```text
-findAll( pt -> {tempC > targetTemp} & !{tempC ~1.5~= targetTemp} & {compressor == "RUNNING"} )
+findAll( pt -> {pt.tempC > pt.targetTemp} & !{pt.tempC ~1.5~= pt.targetTemp} & {pt.compressor == "RUNNING"} )
   then sortDescending(tempC)
 ```
 
@@ -23,7 +23,7 @@ findAll( pt -> {tempC > targetTemp} & !{tempC ~1.5~= targetTemp} & {compressor =
 Clean noisy incoming station readings, fill null humidity measurements, clamp humidity to 0% - 100%, and resample into 15-minute averages:
 
 ```text
-findAll( p -> {stationId == "LAB_EAST"} )
+findAll( p -> {p.stationId == "LAB_EAST"} )
   then fill(humidity, 50.0)
   then clamp(humidity, 0, 100)
   then resample("15m", "avg", tempC)
@@ -37,19 +37,19 @@ findAll( p -> {stationId == "LAB_EAST"} )
 Compute the per-second drain rate on lithium-ion cells to detect sudden power leaks or short circuits:
 
 ```text
-findAll( pt -> {battery.voltage is not null} )
+findAll( pt -> {pt.battery.voltage is not null} )
   then sortAscending()
   then rate(battery.voltage, voltDrainPerSec)
-  then filter( pt -> {voltDrainPerSec < -0.05} )
+  then filter( pt -> {pt.voltDrainPerSec < -0.05} )
 ```
 
 ### Detect Low-Battery Threshold with Running Average Smoothing
 Smooth high-frequency battery measurement fluctuations over a 10-point rolling window and trigger an alert if the smoothed level drops below 15%:
 
 ```text
-findAll( p -> {device.serial in [1001, 1002, 1003]} )
+findAll( p -> {p.device.serial in [1001, 1002, 1003]} )
   then movingAverage(battery.level, 10, batterySmoothed)
-  then filter( p -> {batterySmoothed < 15.0} )
+  then filter( p -> {p.batterySmoothed < 15.0} )
   then select(serial, batterySmoothed)
 ```
 
@@ -61,7 +61,7 @@ findAll( p -> {device.serial in [1001, 1002, 1003]} )
 Monitor differential pressure across two transducers; flag points where differential drops below safety margins:
 
 ```text
-findAll( p -> {pressureInlet - pressureOutlet < 5.0} & {valveState == "OPEN"} )
+findAll( p -> {p.pressureInlet - p.pressureOutlet < 5.0} & {p.valveState == "OPEN"} )
   then sortDescending(timestamp)
   then limit(20)
 ```
@@ -70,7 +70,7 @@ findAll( p -> {pressureInlet - pressureOutlet < 5.0} & {valveState == "OPEN"} )
 Isolate high-frequency accelerometer spikes and compute statistical dispersion (standard deviation):
 
 ```text
-findAll( pt -> {accel.rms > 2.5} | {status =~ "CRIT(ICAL)?"} )
+findAll( pt -> {pt.accel.rms > 2.5} | {pt.status =~ "CRIT(ICAL)?"} )
   then summary(accel.rms, tempC)
 ```
 
@@ -82,7 +82,7 @@ findAll( pt -> {accel.rms > 2.5} | {status =~ "CRIT(ICAL)?"} )
 Omit internal debug registers, rename internal technical identifiers to friendly headers, and paginate the latest 100 records:
 
 ```text
-findAll( p -> {status == "ACTIVE"} )
+findAll( p -> {p.status == "ACTIVE"} )
   then omit(rawAdc, debugFlags, sysTick)
   then rename(tempC, temperatureCelsius)
   then rename(airPressure, barometricHpa)

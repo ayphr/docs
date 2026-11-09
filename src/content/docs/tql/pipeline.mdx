@@ -8,7 +8,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 After data passes through the initial filter clause, it flows sequentially through one or more **Pipeline Operations** chained together using the `then` keyword.
 
 ```text
-findAll( p -> condition )
+findAll( p -> { p.condition } )
   then operation1()
   then operation2(arg)
   then operation3(arg1, arg2)
@@ -196,3 +196,15 @@ Supported syntax in expressions:
 :::tip[Pure & Sandboxed]
 `compute` does not call `eval()` or construct dynamic `Function` objects. It runs via a deterministic recursive-descent math parser, guaranteeing complete security inside untrusted sandboxes and browser tabs.
 :::
+
+---
+
+## Secondary Filters: `filter`
+
+The `filter(variable -> { ... })` operation applies another condition later in the pipeline. As with the root filter, field references inside the block are prefixed with that step's lambda variable:
+
+```text
+findAll( p -> { p.status == "ACTIVE" } )
+  then filter( q -> { q.temperature > 25 } )
+```
+

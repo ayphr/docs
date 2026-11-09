@@ -12,11 +12,13 @@ This page provides an exhaustive quick-reference cheat sheet for all clauses, co
 ## Grammar Overview
 
 ```text
-<action>( <var> -> <expression> ) [ then <pipelineOp> ]*   // filtered
-<action>()                                  [ then <pipelineOp> ]*   // unfiltered
+<action>( <var> -> { <var>.<field> <operator> <value> } ) [ then <pipelineOp> ]*   // filtered
+<action>()                                                [ then <pipelineOp> ]*   // unfiltered
 ```
 
 The filter clause is optional. Omitting the arguments (for example, `findAll()`) skips filtering and operates on every record.
+
+Field references inside a condition block are prefixed with the bound lambda variable. The examples below use `p` as the variable.
 
 ---
 
@@ -39,13 +41,13 @@ All comparison conditions are placed within `{ ... }` braces:
 
 | Operator | Meaning | Example |
 | :--- | :--- | :--- |
-| `<` | Less than | `{tempC < 25.0}` |
-| `<=` | Less than or equal to | `{pressure <= 1013}` |
-| `>` | Greater than | `{battery > 20}` |
-| `>=` | Greater than or equal to | `{vibration >= 0.5}` |
-| `==` / `=` | Equality | `{status == "ACTIVE"}` |
-| `!=` | Inequality | `{status != "ERROR"}` |
-| `field2` | Field-to-field comparison | `{tempActual > tempTarget}` |
+| `<` | Less than | `{p.tempC < 25.0}` |
+| `<=` | Less than or equal to | `{p.pressure <= 1013}` |
+| `>` | Greater than | `{p.battery > 20}` |
+| `>=` | Greater than or equal to | `{p.vibration >= 0.5}` |
+| `==` / `=` | Equality | `{p.status == "ACTIVE"}` |
+| `!=` | Inequality | `{p.status != "ERROR"}` |
+| `p.field2` | Field-to-field comparison | `{p.tempActual > p.tempTarget}` |
 
 ---
 
@@ -53,9 +55,9 @@ All comparison conditions are placed within `{ ... }` braces:
 
 | Operator | Type | Example | Matching Range |
 | :--- | :--- | :--- | :--- |
-| `~<delta>~=` | Absolute | `{humidity ~0.5~= 52}` | `[51.5, 52.5]` |
-| `~<delta>%~=` | Percentage | `{voltage ~5%~= 220}` | `[209.0, 231.0]` ($\pm 5\%$) |
-| `~<delta>~= <field>` | Dynamic setpoint | `{tempC ~1~= targetTemp}` | `[targetTemp - 1, targetTemp + 1]` |
+| `~<delta>~=` | Absolute | `{p.humidity ~0.5~= 52}` | `[51.5, 52.5]` |
+| `~<delta>%~=` | Percentage | `{p.voltage ~5%~= 220}` | `[209.0, 231.0]` ($\pm 5\%$) |
+| `~<delta>~= <field>` | Dynamic setpoint | `{p.tempC ~1~= p.targetTemp}` | `[targetTemp - 1, targetTemp + 1]` |
 
 ---
 
@@ -63,16 +65,16 @@ All comparison conditions are placed within `{ ... }` braces:
 
 | Operator | Category | Example |
 | :--- | :--- | :--- |
-| `in [...]` | Set membership | `{status in ["ONLINE", "STANDBY"]}` |
-| `not in [...]` | Set exclusion | `{code not in [0, 200]}` |
-| `between X and Y` | Numerical range | `{tempC between 18.0 and 24.0}` |
-| `is null` / `is not null` | Null check | `{humidity is not null}` |
-| `exists` / `missing` | Presence check | `{gps.latitude exists}` |
-| `contains` | Substring match | `{message contains "fail"}` |
-| `startsWith` | Prefix match | `{serial startsWith "AYP-"}` |
-| `endsWith` | Suffix match | `{file endsWith ".csv"}` |
-| `=~ "regex"` | Regex match | `{serial =~ "^[0-9]{8}$"}` |
-| `!~ "regex"` | Regex non-match | `{log !~ "DEBUG"}` |
+| `in [...]` | Set membership | `{p.status in ["ONLINE", "STANDBY"]}` |
+| `not in [...]` | Set exclusion | `{p.code not in [0, 200]}` |
+| `between X and Y` | Numerical range | `{p.tempC between 18.0 and 24.0}` |
+| `is null` / `is not null` | Null check | `{p.humidity is not null}` |
+| `exists` / `missing` | Presence check | `{p.gps.latitude exists}` |
+| `contains` | Substring match | `{p.message contains "fail"}` |
+| `startsWith` | Prefix match | `{p.serial startsWith "AYP-"}` |
+| `endsWith` | Suffix match | `{p.file endsWith ".csv"}` |
+| `=~ "regex"` | Regex match | `{p.serial =~ "^[0-9]{8}$"}` |
+| `!~ "regex"` | Regex non-match | `{p.log !~ "DEBUG"}` |
 
 ---
 
@@ -80,10 +82,10 @@ All comparison conditions are placed within `{ ... }` braces:
 
 | Operator | Meaning | Example |
 | :--- | :--- | :--- |
-| `&` | Logical AND | `{tempC > 20} & {humidity < 60}` |
-| `\|` | Logical OR | `{status == "CRIT"} \| {tempC > 80}` |
-| `!` / `not` | Logical NOT | `!{status == "FAULT"}` |
-| `( ... )` | Precedence grouping | `( {a} \| {b} ) & {c}` |
+| `&` | Logical AND | `{p.tempC > 20} & {p.humidity < 60}` |
+| `\|` | Logical OR | `{p.status == "CRIT"} \| {p.tempC > 80}` |
+| `!` / `not` | Logical NOT | `!{p.status == "FAULT"}` |
+| `( ... )` | Precedence grouping | `( {p.a} \| {p.b} ) & {p.c}` |
 
 ---
 
@@ -120,4 +122,4 @@ All comparison conditions are placed within `{ ... }` braces:
 - `then summary([f1, f2, ...])`: Statistical summary (count, min, max, avg, sum, stddev)
 - `then avg(field)` / `min` / `max` / `sum` / `median` / `stddev` / `count()`: Direct scalar reduction
 - `then groupBy(field)`: Group records by field value
-- `then filter(p -> ...)`: Secondary pipeline filter
+- `then filter(p -> { p.condition })`: Secondary pipeline filter

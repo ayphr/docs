@@ -15,22 +15,22 @@ Multiple conditions can be assembled using logical AND (`&`), OR (`|`), and nega
 
 | Operator | Syntax | Precedence | Meaning |
 | :--- | :--- | :--- | :--- |
-| `!` / `not` | `!{condition}` or `!(...)` | Highest | Inverts truth value |
-| `&` | `{c1} & {c2}` | Medium | True only if both conditions are true |
-| `\|` | `{c1} \| {c2}` | Lowest | True if either condition is true |
+| `!` / `not` | `!{p.condition}` or `!(...)` | Highest | Inverts truth value |
+| `&` | `{p.c1} & {p.c2}` | Medium | True only if both conditions are true |
+| `\|` | `{p.c1} \| {p.c2}` | Lowest | True if either condition is true |
 
 ### Operator Precedence & Grouping
 
 Parentheses `( ... )` explicitly enforce evaluation order:
 
 ```text
-findAll( p -> ( {tempC > 40} | {humidity > 80} ) & !{status == "STANDBY"} )
+findAll( p -> ( {p.tempC > 40} | {p.humidity > 80} ) & !{p.status == "STANDBY"} )
 ```
 
 Without parentheses, `&` binds tighter than `|`:
 
 ```text
-{a} | {b} & {c}   // Evaluates as: {a} | ( {b} & {c} )
+{p.a} | {p.b} & {p.c}   // Evaluates as: {p.a} | ( {p.b} & {p.c} )
 ```
 
 ### Negation Examples
@@ -39,13 +39,13 @@ Without parentheses, `&` binds tighter than `|`:
   <TabItem label="Negating Single Condition">
     ```text
     // Match points whose status is NOT FAULT
-    findAll( p -> !{status == "FAULT"} )
+    findAll( p -> !{p.status == "FAULT"} )
     ```
   </TabItem>
   <TabItem label="Negating Compound Expression">
     ```text
     // Match points where BOTH conditions do not hold simultaneously
-    findAll( p -> !( {tempC < 10} & {heater == false} ) )
+    findAll( p -> !( {p.tempC < 10} & {p.heater == false} ) )
     ```
   </TabItem>
 </Tabs>
@@ -57,18 +57,18 @@ Without parentheses, `&` binds tighter than `|`:
 Check whether a field matches any value in a discrete set of literals:
 
 ```text
-{ <field> in [ <val1>, <val2>, ... ] }
-{ <field> not in [ <val1>, <val2>, ... ] }
+{ <variable>.<field> in [ <val1>, <val2>, ... ] }
+{ <variable>.<field> not in [ <val1>, <val2>, ... ] }
 ```
 
 ### Examples
 
 ```text
 // Match any point in high alert states
-findAll( p -> {status in ["WARN_HIGH_TEMP", "CRITICAL_PRESSURE", "EMERGENCY"]} )
+findAll( p -> {p.status in ["WARN_HIGH_TEMP", "CRITICAL_PRESSURE", "EMERGENCY"]} )
 
 // Exclude standard operational codes
-findAll( p -> {errorCode not in [0, 200, 204]} )
+findAll( p -> {p.errorCode not in [0, 200, 204]} )
 ```
 
 Elements in the set can be numbers, strings, or booleans.
@@ -80,17 +80,17 @@ Elements in the set can be numbers, strings, or booleans.
 The `between` operator checks if a numerical or chronological field falls within an inclusive closed interval $[min, max]$.
 
 ```text
-{ <field> between <min> and <max> }
+{ <variable>.<field> between <min> and <max> }
 ```
 
 ### Examples
 
 ```text
 // Match comfort zone temperatures between 20.0 °C and 24.5 °C (inclusive)
-findAll( p -> {tempC between 20.0 and 24.5} )
+findAll( p -> {p.tempC between 20.0 and 24.5} )
 
 // Filter by ISO timestamp string boundaries
-findAll( p -> {recordedAt between "2026-11-01" and "2026-11-08"} )
+findAll( p -> {p.recordedAt between "2026-11-01" and "2026-11-08"} )
 ```
 
 ---
@@ -101,25 +101,25 @@ Sensors may fail to transmit specific payload metrics when sensors disconnect, w
 
 ### Checking for Null / Non-Null
 
-- `{field is null}`: Evaluates to `true` if the field is `null` or `undefined`.
-- `{field is not null}`: Evaluates to `true` if the field holds a concrete value.
+- `{p.field is null}`: Evaluates to `true` if the field is `null` or `undefined`.
+- `{p.field is not null}`: Evaluates to `true` if the field holds a concrete value.
 
 ```text
 // Find points where the external barometer failed to report a value
-findAll( p -> {barometer.pressure is null} )
+findAll( p -> {p.barometer.pressure is null} )
 
 // Only process records that have valid battery readings
-findAll( p -> {battery.voltage is not null} )
+findAll( p -> {p.battery.voltage is not null} )
 ```
 
 ### Checking for Property Presence / Absence
 
-- `{field exists}` or `{field is present}`: True if property exists on the record.
-- `{field missing}` or `{field is missing}`: True if property does not exist.
+- `{p.field exists}` or `{p.field is present}`: True if property exists on the record.
+- `{p.field missing}` or `{p.field is missing}`: True if property does not exist.
 
 ```text
 // Detect points containing optional GPS coordinates
-findAll( p -> {location.latitude exists} )
+findAll( p -> {p.location.latitude exists} )
 ```
 
 ---
@@ -130,20 +130,19 @@ TelemetryQL provides built-in operators for string inspection, prefixes, suffixe
 
 | Operator | Example | Evaluates To |
 | :--- | :--- | :--- |
-| `contains` | `{msg contains "error"}` | `String(msg).includes("error")` |
-| `not contains` | `{msg not contains "debug"}` | `!String(msg).includes("debug")` |
-| `startsWith` | `{device startsWith "ESP32"}` | `String(device).startsWith("ESP32")` |
-| `endsWith` | `{file endsWith ".csv"}` | `String(file).endsWith(".csv")` |
-| `=~` (regex match) | `{serial =~ "^AYP-[0-9]{6}$"}` | `RegExp.test(serial)` |
-| `!~` (regex non-match) | `{logLine !~ "HEALTHY\|HEARTBEAT"}` | `!RegExp.test(logLine)` |
+| `contains` | `{p.msg contains "error"}` | `String(p.msg).includes("error")` |
+| `not contains` | `{p.msg not contains "debug"}` | `!String(p.msg).includes("debug")` |
+| `startsWith` | `{p.device startsWith "ESP32"}` | `String(p.device).startsWith("ESP32")` |
+| `endsWith` | `{p.file endsWith ".csv"}` | `String(p.file).endsWith(".csv")` |
+| `=~` (regex match) | `{p.serial =~ "^AYP-[0-9]{6}$"}` | `RegExp.test(p.serial)` |
+| `!~` (regex non-match) | `{p.logLine !~ "HEALTHY\|HEARTBEAT"}` | `!RegExp.test(p.logLine)` |
 
 ### Examples
 
 ```text
 // Isolate firmware versions from the beta branch
-findAll( p -> {firmware startsWith "v3.0.0-beta"} )
+findAll( p -> {p.firmware startsWith "v3.0.0-beta"} )
 
 // Detect error log lines matching regex
-findAll( p -> {log.message =~ "(?i)fail(ure\|ed)?"} )
+findAll( p -> {p.log.message =~ "(?i)fail(ure\|ed)?"} )
 ```
-

@@ -6,8 +6,8 @@ description: Learn how to use findAll, findFirst, findLast, count, and exists to
 In TelemetryQL, every query begins with a **Query Root**. The query root defines the retrieval action, the bound variable identifier representing each telemetry record, and the return structure of the query. The filter clause is optional: calling a root with no arguments (for example, `findAll()`) skips filtering and operates on every record.
 
 ```text
-<action>( <variable> -> ( <condition> ) )   // filtered
-<action>()                                  // unfiltered
+<action>( <variable> -> ( { <variable>.<field> <operator> <value> } ) )   // filtered
+<action>()                                                               // unfiltered
 ```
 
 ---
@@ -59,7 +59,7 @@ Pipeline operations can follow an unfiltered root exactly as they can a filtered
 Calling `findAll()` with no arguments skips the filter and returns every record.
 
 ```text
-findAll( p -> {tempC > 25.0} ) then sortAscending()
+findAll( p -> {p.tempC > 25.0} ) then sortAscending()
 ```
 
 Output:
@@ -79,7 +79,7 @@ Returns the first element of the dataset that satisfies the filter (respecting a
 Calling `findFirst()` with no arguments returns the first record, or `null` if the dataset is empty.
 
 ```text
-findFirst( reading -> {battery < 15.0} )
+findFirst( reading -> {reading.battery < 15.0} )
 ```
 
 Output:
@@ -104,7 +104,7 @@ Returns the final element that passes the filter condition. In a chronologically
 Calling `findLast()` with no arguments returns the last record, or `null` if the dataset is empty.
 
 ```text
-findLast( p -> {status == "ACTIVE"} )
+findLast( p -> {p.status == "ACTIVE"} )
 ```
 
 Output:
@@ -125,7 +125,7 @@ Output:
 Calling `count()` with no arguments returns the total number of records in the dataset.
 
 ```text
-count( pt -> {pressure < 1000} )
+count( pt -> {pt.pressure < 1000} )
 ```
 
 Output:
@@ -146,7 +146,7 @@ Returns a boolean `true` if one or more points meet the criteria; otherwise `fal
 Calling `exists()` with no arguments returns `true` when the dataset contains at least one record.
 
 ```text
-exists( pt -> {tempC >= 85.0} )
+exists( pt -> {pt.tempC >= 85.0} )
 ```
 
 Output:
@@ -165,6 +165,5 @@ findAll( telemetryRecord -> ( {telemetryRecord.vibration > 1.2} ) )
 ```
 
 :::note
-Within condition braces `{ ... }`, referencing field names directly (e.g. `{vibration > 1.2}`) implicitly resolves against the current record, making shorthand notation clean and effortless.
+Within condition braces `{ ... }`, field references are prefixed with the bound variable (for example, `{ telemetryRecord.vibration > 1.2 }`). The prefix must match the identifier before `->`.
 :::
-

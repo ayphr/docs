@@ -3,11 +3,15 @@ title: Filter Syntax & Conditions
 description: Detailed syntax for condition blocks, standard comparisons, nested paths, and field comparisons in TelemetryQL.
 ---
 
-Condition blocks in TelemetryQL are enclosed within `{ ... }` curly braces and evaluate against properties of each telemetry record.
+Condition blocks in TelemetryQL are enclosed within `{ ... }` curly braces and evaluate against properties of each telemetry record. Field references inside a block are prefixed with the lambda variable bound before the arrow:
 
 ```text
-{ <field> <operator> <value> }
+{ <variable>.<field> <operator> <value> }
 ```
+
+:::note[Lambda Variable Prefix]
+The prefix must match the variable name in the query root. For `findAll( p -> ... )`, write `{ p.temperature > 20 }`. For `findAll( reading -> ... )`, write `{ reading.temperature > 20 }`.
+:::
 
 ---
 
@@ -17,15 +21,15 @@ TelemetryQL supports six standard binary comparison operators:
 
 | Operator | Definition | Example | Evaluation |
 | :--- | :--- | :--- | :--- |
-| `<` | Strictly less than | `{tempC < 20}` | `point.tempC < 20` |
-| `<=` | Less than or equal to | `{pressure <= 1013.25}` | `point.pressure <= 1013.25` |
-| `>` | Strictly greater than | `{vibration > 0.45}` | `point.vibration > 0.45` |
-| `>=` | Greater than or equal to | `{battery >= 80}` | `point.battery >= 80` |
-| `==` | Loose/strict equality | `{status == "ACTIVE"}` | `point.status === "ACTIVE"` |
-| `!=` | Inequality | `{mode != "STANDBY"}` | `point.mode !== "STANDBY"` |
+| `<` | Strictly less than | `{p.tempC < 20}` | `p.tempC < 20` |
+| `<=` | Less than or equal to | `{p.pressure <= 1013.25}` | `p.pressure <= 1013.25` |
+| `>` | Strictly greater than | `{p.vibration > 0.45}` | `p.vibration > 0.45` |
+| `>=` | Greater than or equal to | `{p.battery >= 80}` | `p.battery >= 80` |
+| `==` | Loose/strict equality | `{p.status == "ACTIVE"}` | `p.status === "ACTIVE"` |
+| `!=` | Inequality | `{p.mode != "STANDBY"}` | `p.mode !== "STANDBY"` |
 
 :::note[Single Equal Sign]
-As a convenience for rapid typing, `{status = "ACTIVE"}` is automatically normalized to equality `{status == "ACTIVE"}`.
+As a convenience for rapid typing, `{p.status = "ACTIVE"}` is automatically normalized to equality `{p.status == "ACTIVE"}`.
 :::
 
 ---
@@ -38,21 +42,21 @@ Condition blocks safely compare against all standard JSON-compatible data types:
 Both integers and floating-point decimals, including negative numbers:
 
 ```text
-findAll( p -> {tempC > -12.5} & {pressure <= 1013} )
+findAll( p -> {p.tempC > -12.5} & {p.pressure <= 1013} )
 ```
 
 ### Strings
 Single-quoted or double-quoted strings with standard escape sequence support (`\n`, `\t`, `\"`, `\'`):
 
 ```text
-findAll( p -> {status == "ACTIVE"} | {firmware == 'v2.1.0'} )
+findAll( p -> {p.status == "ACTIVE"} | {p.firmware == 'v2.1.0'} )
 ```
 
 ### Booleans
 Literal `true` and `false`:
 
 ```text
-findAll( p -> {isCharging == true} & {hasError == false} )
+findAll( p -> {p.isCharging == true} & {p.hasError == false} )
 ```
 
 ---
@@ -64,7 +68,7 @@ Telemetry streams often bundle hierarchical or grouped payloads (such as device 
 TQL provides dot-notation paths directly inside `{ ... }`:
 
 ```text
-findAll( p -> {device.battery.level < 15} & {imu.accel.z > 9.81} )
+findAll( p -> {p.device.battery.level < 15} & {p.imu.accel.z > 9.81} )
 ```
 
 Given this JSON record:
@@ -84,7 +88,7 @@ Given this JSON record:
 }
 ```
 
-TQL safely traverses `device.battery.level` and `imu.accel.z`.
+TQL safely traverses `p.device.battery.level` and `p.imu.accel.z`.
 
 :::tip[Null Safety]
 If an intermediate property in a path does not exist (for instance, if `device` is `null` or `imu.accel` is undefined), TQL gracefully evaluates the condition to `false` without throwing runtime errors.
@@ -99,23 +103,22 @@ In telemetry processing, you frequently need to compare two variables on the sam
 When the right-hand operand inside `{ ... }` is an unquoted identifier, TQL resolves it as another field reference on the current record:
 
 ```text
-findAll( p -> {actualTemp > setpointTemp} )
+findAll( p -> {p.actualTemp > p.setpointTemp} )
 ```
 
 ### Examples
 
 #### Temperature Exceeding Target:
 ```text
-findAll( p -> {tempC > targetTemp} )
+findAll( p -> {p.tempC > p.targetTemp} )
 ```
 
 #### Pressure Imbalance:
 ```text
-findAll( p -> {chamberPressure != ambientPressure} )
+findAll( p -> {p.chamberPressure != p.ambientPressure} )
 ```
 
 #### Sensor Discrepancy (comparing redundant sensors):
 ```text
-findAll( p -> {sensorA.reading > sensorB.reading} )
+findAll( p -> {p.sensorA.reading > p.sensorB.reading} )
 ```
-
