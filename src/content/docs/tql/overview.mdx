@@ -52,22 +52,14 @@ findAll( point -> ( {point.tempC > point.targetTemp} & {point.relHumidity ~2%~= 
 
 ## Execution Lifecycle
 
-When TQL evaluates a query string against a dataset, it progresses through three distinct phases:
+When TQL evaluates a query string against a dataset, it progresses through four distinct phases:
 
-```text
-[ Query String ]
-       │
-       ▼
-1. Lexer & Parser: Tokenizes and produces an Abstract Syntax Tree (QueryAST)
-       │
-       ▼
-2. Filter Phase: Evaluates boolean condition AST against each point in dataset
-       │
-       ▼
-3. Pipeline Phase: Applies sequential transformations (sort, resample, compute, slice)
-       │
-       ▼
-4. Action Dispatch: Returns final result (T[], single point, count, boolean, or summary)
+```mermaid
+flowchart TD
+    A["Query String"] --> B["1. Compilation Phase<br/>Lexer & Parser tokenize and build QueryAST<br/>Compiler emits a predicate function"]
+    B --> C["2. Filter Phase<br/>Evaluate predicate against each point in dataset"]
+    C --> D["3. Pipeline Phase<br/>Apply sequential transformations<br/>(sort, resample, compute, slice, ...)"]
+    D --> E["4. Action Dispatch<br/>Package final result<br/>(T[], single point, count, boolean, or summary)"]
 ```
 
 1. **Compilation Phase**: The query string is tokenized by the `Lexer` and parsed into an AST by the `Parser`. The `Compiler` compiles the condition tree into a single high-performance JavaScript predicate function.
